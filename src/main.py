@@ -1,124 +1,53 @@
 #%%
-from langgraph.graph import StateGraph, START, END 
-import random
-from typing import Dict, List, TypedDict
+import os
+import sys
 import requests
-import time
 from dotenv import load_dotenv
+from tokens import tokens
+
 #%%
-load_dotenv()
+load_dotenv() 
 
-class AgentState(TypedDict):
-    message: str
-    token_historical_prices: Dict[str, List]
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-# %%
-token_watch_list = [ 
-    "bitcoin",
-    "ethereum",
-    "solana"
-    # "optimism",
-    # "render-token",
-    # "polkadot",
-    # "uniswap",
-    # "chainlink",
-    # "aave",
-    # "binancecoin",
-    # "pendle",
-    # "tron",
-    # "ripple", ## "xrp"
-    # "avalanche-2",
-    # "cardano",
-    # "pepe",
-    # "superfarm", ## "superverse",
-    # "dogecoin",
-    # "raydium",
-    # "jito-governance-token", ## "jito",
-    # "jupiter-exchange-solana",
-    # "hyperliquid",
-    # "sui",
-    # "ethena",
-    # "pump-fun",
-    # "shiba-inu",
-    # "arbitrum",
-    # "1000bonk",
-    # "based-brett",
-    # "virtual-protocol",
-    # "simon-s-cat",
-    # "pudgy-penguins",
-    # "ondo-finance",
-    # "aerodrome-finance",
-    # "binancecoin",
-    # "kamino",
-    # "beefy-finance"
+api_key = os.getenv("COINGECKO_API_KEY_ACCOUNT1")
+if not api_key:
+    raise ValueError("COINGECKO_API_KEY_ACCOUNT1 not found in .env file.")
 
-######
-    ## "ponke"
-    ## "orca"
-    ## "chill-guy"
-]
-# %%
-def get_token_historical_price(state: AgentState) -> AgentState:
-    """HTTP request to the coingecko API to get historical price data for a list of tokens, with rate limiting and retries."""
-    token_historical_prices = {}
-    headers = {
-        "x-cg-demo-api-key": "COINGECKO_API_KEY_ACCOUNT1"    
-    }        
-    params = {
-        "vs_currency": "usd",
-        "days": "60",
-        "interval": "daily"
-    }
-    min_interval = 2.0  # seconds (30 requests per minute)
-    retries = 2
-    retry_delay = 2.0  # seconds
-    last_request_time = None
+#%%
+headers = { "x-cg-demo-api-key": api_key }
+parameters = { "vs_currency": "usd", "days": "60", "interval": "daily" }
 
-    for token in token_watch_list:
-        if last_request_time is not None:
-            elapsed = time.time() - last_request_time
-            if elapsed < min_interval:
-                time.sleep(min_interval - elapsed)
-        attempt = 0
-        success = False
-        while attempt <= retries:
-            try:
-                url = f"https://api.coingecko.com/api/v3/coins/{token}/market_chart"
-                response = requests.get(url, headers=headers, params=params)
-                response.raise_for_status()
-                data = response.json()
-                token_historical_prices[token] = data.get("prices", [])
-                print(f"Successfully fetched data for {token}")
-                success = True
-                break  # success, exit retry loop
-            except requests.exceptions.RequestException as e:
-                print(f"Error fetching data for {token} (attempt {attempt+1}): {e}")
-                if attempt < retries:
-                    time.sleep(retry_delay)
-                else:
-                    token_historical_prices[token] = []
-            attempt += 1
-        last_request_time = time.time()
-    state['token_historical_prices'] = token_historical_prices
-    state['message'] = "Fetched historical prices for tokens."
-    return state
+#%%
+# Empty dictionary to store the api response
+market_data = {}
 
-# %%
-graph = StateGraph(AgentState)
+# Loop through the keys (the api_id) of the dictionary
+for token_id in tokens.keys():
 
-graph.add_node("get_token_historical_price", get_token_historical_price)
-graph.add_edge(START, "get_token_historical_price")
-graph.add_edge("get_token_historical_price", END)
-agent = graph.compile()
+    token_info = tokens[token_id]
+    token_name = token_info['name']
+    token_symbol = token_info['symbol']
 
-# %%
-if __name__ == "__main__":
-    initial_state = AgentState(message="start", token_historical_prices={})
-    final_state = agent.invoke(initial_state)
+    url = f"https://api.coingecko.com/api/v3/coins/{token_id}/market_chart"
+        
+    response = requests.get(url, headers=headers, params=parameters)
     
-    print("\n--- Agent Final State ---")
-    # Pretty print the result
-    import json
-    print(json.dumps(final_state, indent=2))
-    print("-----------------------")
-    # %%
+    print(response.json())
+
+
+    if response.status_code == 200:
+        market_data[token_id] = {
+            "name": token_name,
+            "symbol": token_symbol,
+            "market_data": response.json()
+        }
+    else:
+        print(f"Response status code: {response.status_code}")
+
+
+
+
+# %%
+print(market_data)
+# %%
