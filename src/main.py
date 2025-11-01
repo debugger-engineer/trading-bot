@@ -4,6 +4,8 @@ import sys
 import requests
 from dotenv import load_dotenv
 from tokens import tokens
+import pandas as pd
+# import pandas_ta as ta
 
 # === Environment Config # ===
 load_dotenv() 
@@ -33,6 +35,7 @@ def call_coingecko_api(tokens):
               could be fetched.
     """
 
+    # Initialize the market data dictionary
     market_data = {}
 
     # Loop through the keys (the api_id) of the dictionary
@@ -62,6 +65,63 @@ def call_coingecko_api(tokens):
                 "market_data": response.json()
             }
         else:
-            return print(f"Response status code: {response.status_code}")
+            print(f"Response status code: {response.status_code}")
+            return None
 
     return market_data
+# %%
+
+market_data = call_coingecko_api(tokens)
+print(market_data)
+
+#%%
+
+def calculate_rsi(market_data, period=14):
+
+    rsi_results = {}
+
+    for token_id, token_data in market_data.items():
+        #Extract the price data for the current token
+        prices = token_data.get("market_data", {}).get("prices", [])
+
+        if prices:
+            # Create a pandas DataFrame from the price data
+            df = pd.DataFrame(prices, columns=["timestamp", "price"])
+
+            # Convert the price column to numeric
+            df['price'] = pd.to_numeric(df['price'])
+
+            # Calculate price changes
+            delta = df['price'].diff()
+
+            # Separate gains and losses
+            gain = (delta.where(delta > 0, 0)).rolling(window=period).mean()
+            loss = (-delta.where(delta < 0, 0)).rolling(window=period).mean()
+
+            # Use Exponential Moving Average (EMA) for smoothing, which is the standard for RSI.
+            # The 'com' (center of mass) parameter is set to period - 1 to match Wilder's smoothing.
+            avg_gain = gain.ewm(com=period - 1, min_periods=period, adjust=False).mean()
+            avg_loss = loss.ewm(com=period - 1, min_periods=period, adjust=False).mean()
+
+            # Calculate the Relative Strength (RS) and the RSI
+            rs = avg_gain / avg_loss
+            rsi = 100 - (100 / (1 + rs))
+
+            # Get the last RSI value and round it to two decimal places
+            last_rsi = rsi.iloc[-1]
+            if pd.notna(last_rsi):
+                rsi_results[token_data['symbol']] = round(last_rsi, 2)
+            else:
+                rsi_results[token_data['symbol']] = None
+        else:
+            # Not enough data to calculate RSI
+            rsi_results[token_data['symbol']] = None
+            
+    return rsi_results
+
+
+# %%
+market_data = call_coingecko_api(tokens)
+rsi_values = calculate_rsi(market_data)
+print(rsi_values)
+# %%
