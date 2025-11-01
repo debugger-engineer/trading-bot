@@ -7,6 +7,8 @@ A agent/bot to monitor the crypto market, send alerts when a token is oversold (
 
 ## Next Steps
 - [x] Implement RSI (Relative Strength Index) calculation.
+- [ ] Add docker and docker-compose files.
+- [ ] the function call_coingecko_api is not working for all tokens due the request limit... CHECK IT!
 - [ ] Make the function call_coingecko_api smarter by saving the call results in a sql lite db and calling only the missing values (like today's values), not all the values in every call.
 - [ ] Integrate with a Telegram bot for sending alerts.
 - [ ] Integrate with a cryptocurrency exchange API to place trade orders.
