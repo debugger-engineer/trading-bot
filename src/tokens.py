@@ -7,10 +7,10 @@ tokens = {
     "name": "Bitcoin",
     "symbol": "BTC"
   },
-  # "ethereum": {
-  #   "name": "Ethereum",
-  #   "symbol": "ETH"
-  # },
+  "ethereum": {
+    "name": "Ethereum",
+    "symbol": "ETH"
+  },
   # "solana": {
   #   "name": "Solana",
   #   "symbol": "SOL"

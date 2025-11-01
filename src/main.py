@@ -66,7 +66,6 @@ def call_coingecko_api(tokens):
             }
         else:
             print(f"Response status code: {response.status_code}")
-            return None
 
     return market_data
 # %%
@@ -75,9 +74,28 @@ market_data = call_coingecko_api(tokens)
 print(market_data)
 
 #%%
+print(market_data)
+
+#%%
 
 def calculate_rsi(market_data, period=14):
+    """
+    Calculates the RSI for each token using a standard EMA-based method
+    to align with platforms like TradingView.
 
+    Args:
+        market_data (dict): The output from the call_coingecko_api function.
+        period (int): The time period for the RSI calculation (default is 14).
+
+    Returns:
+        dict: A dictionary with token symbols as keys and their latest RSI as values,
+              rounded to two decimal places.
+    """
+
+    if not market_data:
+        print("No market data found.")
+        return None
+    
     rsi_results = {}
 
     for token_id, token_data in market_data.items():
@@ -109,15 +127,15 @@ def calculate_rsi(market_data, period=14):
 
             # Get the last RSI value and round it to two decimal places
             last_rsi = rsi.iloc[-1]
+
             if pd.notna(last_rsi):
-                rsi_results[token_data['symbol']] = round(last_rsi, 2)
+                rsi_results[token_data['symbol']] = {'rsi': round(last_rsi, 2)}
             else:
-                rsi_results[token_data['symbol']] = None
+                rsi_results[token_data['symbol']] = {'rsi': None}
         else:
-            # Not enough data to calculate RSI
-            rsi_results[token_data['symbol']] = None
+            rsi_results[token_data['symbol']] = {'rsi': None}
             
-    return rsi_results
+    return rsi_results            
 
 
 # %%
