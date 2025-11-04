@@ -24,29 +24,39 @@ Project in development phase...
 
 ## How to Run with Docker
 
-1.  **Build the Docker image:**
+1.  **Create the Environment File:**
+    Before running with Docker, you need to create a `.env` file in the root of the project. This file will hold your secret keys.
+
+    Create a file named `.env` and add the following content, replacing the placeholder values with your actual credentials:
+    ```
+    COINGECKO_API_KEY_ACCOUNT=YOUR_COINGECKO_API_KEY
+    TELEGRAM_BOT_TOKEN=YOUR_TELEGRAM_BOT_TOKEN
+    TELEGRAM_CHAT_ID=YOUR_TELEGRAM_CHAT_ID
+    ```
+
+2.  **Build the Docker image:**
     ```sh
     docker build -t trading-bot .
     ```
 
-2.  **Run the container in the foreground:**
-    This will run the container and stream logs to your terminal. Press `Ctrl+C` to stop. The `--rm` flag automatically removes the container when it exits.
+3.  **Run the container in the foreground:**
+    This command runs the container, securely injects your secrets from the `.env` file, and streams logs to your terminal. Press `Ctrl+C` to stop. The `--rm` flag automatically removes the container when it exits.
     ```sh
-    docker run --rm trading-bot
+    docker run --rm --env-file .env trading-bot
     ```
 
-3.  **Run the container in the background (detached mode):**
-    To run the application continuously, you can start it in detached mode.
+4.  **Run the container in the background (detached mode):**
+    To run the application continuously on a server, you can start it in detached mode.
     ```sh
-    docker run -d --name trading-bot-instance trading-bot
+    docker run -d --name trading-bot-instance --restart always --env-file .env trading-bot
     ```
 
-4.  **View logs for the background container:**
+5.  **View logs for the background container:**
     ```sh
     docker logs -f trading-bot-instance
     ```
 
-5.  **Stop the background container:**
+6.  **Stop the background container:**
     ```sh
     docker stop trading-bot-instance
     ```
